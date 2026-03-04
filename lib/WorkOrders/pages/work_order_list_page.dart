@@ -8,6 +8,7 @@ import 'package:mobo_manufacturing_app/shared/widgets/snackbar.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../MO/pages/MoForm/models/work_center.dart';
+import '../../Rating/review_service.dart';
 import '../../globals.dart';
 import '../data/work_order_timer_manager.dart';
 import '../model/lost_wo_reason.dart';
@@ -895,6 +896,10 @@ class _WorkOrderListPageState extends State<WorkOrderListPage> {
                                   wo.id,
                                   wo.formattedDuration,
                                 );
+                                ReviewService().trackSignificantEvent();
+                                Future.delayed(const Duration(seconds: 3), () {
+                                  ReviewService().checkAndShowRating(context);
+                                });
                               } finally {
                                 if (mounted) {
                                   setState(() => isLoadingMap[wo.id] = false);
@@ -906,6 +911,10 @@ class _WorkOrderListPageState extends State<WorkOrderListPage> {
                               setState(() => isLoadingMap[wo.id] = true);
                               try {
                                 await provider.pauseWorkOrder(wo.id);
+                                ReviewService().trackSignificantEvent();
+                                Future.delayed(const Duration(seconds: 3), () {
+                                  ReviewService().checkAndShowRating(context);
+                                });
                               } finally {
                                 if (mounted) {
                                   setState(() => isLoadingMap[wo.id] = false);
@@ -917,6 +926,10 @@ class _WorkOrderListPageState extends State<WorkOrderListPage> {
                               setState(() => isDoneLoadingMap[wo.id] = true);
                               try {
                                 await provider.finishWorkOrder(wo.id);
+                                ReviewService().trackSignificantEvent();
+                                Future.delayed(const Duration(seconds: 3), () {
+                                  ReviewService().checkAndShowRating(context);
+                                });
                               } finally {
                                 if (mounted) {
                                   setState(
