@@ -1,5 +1,6 @@
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
+import '../../Rating/review_service.dart';
 import '../../globals.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
@@ -670,6 +671,10 @@ class _ScrapDetailPageState extends State<ScrapDetailPage> {
                       setState(() {
                         isEditing = false;
                       });
+                      ReviewService().trackSignificantEvent();
+                      Future.delayed(const Duration(seconds: 3), () {
+                        ReviewService().checkAndShowRating(context);
+                      });
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -765,6 +770,10 @@ class _ScrapDetailPageState extends State<ScrapDetailPage> {
                             context,
                             'Scrap validated successfully',
                           );
+                          ReviewService().trackSignificantEvent();
+                          Future.delayed(const Duration(seconds: 3), () {
+                            ReviewService().checkAndShowRating(context);
+                          });
                         } else if (response is Map &&
                             response['res_model'] ==
                                 'stock.warn.insufficient.qty.scrap') {
@@ -820,6 +829,10 @@ class _ScrapDetailPageState extends State<ScrapDetailPage> {
                                         context,
                                         'Scrap validated successfully',
                                       );
+                                      ReviewService().trackSignificantEvent();
+                                      Future.delayed(const Duration(seconds: 3), () {
+                                        ReviewService().checkAndShowRating(context);
+                                      });
                                     } else {
                                       CustomSnackbar.showError(
                                         context,

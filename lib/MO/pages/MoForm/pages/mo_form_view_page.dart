@@ -4,6 +4,7 @@ import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import '../../../../Rating/review_service.dart';
 import '../../../../core/navigation/data_loss_warning_dialog.dart';
 import '../../../../globals.dart';
 import 'package:hive_ce/hive.dart';
@@ -617,21 +618,37 @@ class _MOFormViewPageState extends State<MOFormViewPage> {
                                 context.read<MoFormBloc>().add(
                                   ConfirmMo(moItem),
                                 );
+                                ReviewService().trackSignificantEvent();
+                                Future.delayed(const Duration(seconds: 3), () {
+                                  ReviewService().checkAndShowRating(context);
+                                });
                                 break;
                               case 'cancel':
                                 context.read<MoFormBloc>().add(
                                   CancelMo(moItem),
                                 );
+                                ReviewService().trackSignificantEvent();
+                                Future.delayed(const Duration(seconds: 3), () {
+                                  ReviewService().checkAndShowRating(context);
+                                });
                                 break;
                               case 'produce_all':
                                 context.read<MoFormBloc>().add(
                                   ProduceAllMo(moItem),
                                 );
+                                ReviewService().trackSignificantEvent();
+                                Future.delayed(const Duration(seconds: 3), () {
+                                  ReviewService().checkAndShowRating(context);
+                                });
                                 break;
                               case 'unbuild':
                                 context.read<MoFormBloc>().add(
                                   UnbuildMo(moItem),
                                 );
+                                ReviewService().trackSignificantEvent();
+                                Future.delayed(const Duration(seconds: 3), () {
+                                  ReviewService().checkAndShowRating(context);
+                                });
                                 break;
                               case 'scrap':
                                 showDialog(
@@ -1225,6 +1242,10 @@ class _MOFormViewPageState extends State<MOFormViewPage> {
                                           int.parse(moItem[0]['id'].toString()),
                                         ),
                                       );
+                                      ReviewService().trackSignificantEvent();
+                                      Future.delayed(const Duration(seconds: 3), () {
+                                        ReviewService().checkAndShowRating(context);
+                                      });
                                       await _refreshWorkOrders();
                                       final moItems = await MoFormService()
                                           .loadMo(moItem[0]['id']);

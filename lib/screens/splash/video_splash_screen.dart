@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../LoginPage/controllers/auth_controller.dart';
 import '../../LoginPage/services/auth_service.dart';
 import '../../LoginPage/services/storage_service.dart';
+import '../../Rating/review_service.dart';
 import '../../globals.dart';
 
 /// Splash screen that plays a branded video animation (manu.mp4) on app launch.
@@ -36,6 +37,12 @@ class _VideoSplashScreenState extends State<VideoSplashScreen> {
       storageService: StorageService(),
     );
     _initializeVideo();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(seconds: 2), () {
+        ReviewService().trackAppOpen();
+      });
+    });
   }
 
   /// Initializes and starts playing the splash video asset.

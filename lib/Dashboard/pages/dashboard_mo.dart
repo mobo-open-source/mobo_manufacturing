@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../../LoginPage/models/session_model.dart';
 import '../../LoginPage/services/storage_service.dart';
 import '../../MO/pages/MoList/pages/mo_list.dart';
+import '../../Rating/review_service.dart';
 import '../../Scrap/pages/scrap_list_page.dart';
 import '../../WorkOrders/pages/work_order_list_page.dart';
 import '../../core/company/infrastructure/company_refresh_bus.dart';
@@ -85,7 +86,15 @@ class _DashboardMoPageState extends State<DashboardMoPage> {
       if (!mounted) return;
       AppBootstrapper.reloadAppBlocs(context);
     });
-    loadProfile();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(seconds: 2), () {
+        loadProfile();
+        if (mounted) {
+          ReviewService().checkAndShowRating(context);
+        }
+      });
+    });
   }
 
   /// Loads current user profile and updates avatar + account data.
