@@ -8,7 +8,7 @@ part of 'models.dart';
 
 class HiveProductAdapter extends TypeAdapter<HiveProduct> {
   @override
-  final int typeId = 0;
+  final typeId = 0;
 
   @override
   HiveProduct read(BinaryReader reader) {
@@ -17,7 +17,7 @@ class HiveProductAdapter extends TypeAdapter<HiveProduct> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return HiveProduct(
-      id: fields[0] as int,
+      id: (fields[0] as num).toInt(),
       name: fields[1] as String,
     );
   }
@@ -45,7 +45,7 @@ class HiveProductAdapter extends TypeAdapter<HiveProduct> {
 
 class HiveWorkCenterAdapter extends TypeAdapter<HiveWorkCenter> {
   @override
-  final int typeId = 1;
+  final typeId = 1;
 
   @override
   HiveWorkCenter read(BinaryReader reader) {
@@ -54,7 +54,7 @@ class HiveWorkCenterAdapter extends TypeAdapter<HiveWorkCenter> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return HiveWorkCenter(
-      id: fields[0] as int,
+      id: (fields[0] as num).toInt(),
       name: fields[1] as String,
     );
   }
@@ -82,7 +82,7 @@ class HiveWorkCenterAdapter extends TypeAdapter<HiveWorkCenter> {
 
 class HiveBomAdapter extends TypeAdapter<HiveBom> {
   @override
-  final int typeId = 2;
+  final typeId = 2;
 
   @override
   HiveBom read(BinaryReader reader) {
@@ -90,10 +90,7 @@ class HiveBomAdapter extends TypeAdapter<HiveBom> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return HiveBom(
-      id: fields[0] as int,
-      name: fields[1] as String,
-    );
+    return HiveBom(id: (fields[0] as num).toInt(), name: fields[1] as String);
   }
 
   @override
@@ -119,7 +116,7 @@ class HiveBomAdapter extends TypeAdapter<HiveBom> {
 
 class HiveUserModelAdapter extends TypeAdapter<HiveUserModel> {
   @override
-  final int typeId = 3;
+  final typeId = 3;
 
   @override
   HiveUserModel read(BinaryReader reader) {
@@ -128,7 +125,7 @@ class HiveUserModelAdapter extends TypeAdapter<HiveUserModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return HiveUserModel(
-      id: fields[0] as int,
+      id: (fields[0] as num).toInt(),
       name: fields[1] as String,
     );
   }
