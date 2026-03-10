@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:mobo_manufacturing_app/LoginPage/pages/reset_password.dart';
 import 'package:mobo_manufacturing_app/LoginPage/pages/totp_page.dart';

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 

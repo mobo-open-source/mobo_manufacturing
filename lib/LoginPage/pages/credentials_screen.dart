@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:mobo_manufacturing_app/LoginPage/pages/totp_page.dart';
 import '../../Dashboard/services/app_bootstrapper.dart';
 import '../../MO/pages/MoList/service/hive/models.dart';
