@@ -3,16 +3,17 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hive/hive.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:mobo_manufacturing_app/Dashboard/pages/SwitchAccount/server_url_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../LoginPage/models/session_model.dart';
 import '../../../LoginPage/pages/totp_page.dart';
 import '../../../LoginPage/services/app_install_check.dart';
 import '../../../LoginPage/services/storage_service.dart';
-import '../../../MO/pages/MoList/service/hive/models.dart';
+import '../../../core/company/services/connectivity_service.dart';
 import '../../../core/company/session/company_session_manager.dart';
 import '../../../core/providers/motion_provider.dart';
 import '../../../core/security/secure_storage_service.dart';
@@ -37,6 +38,7 @@ class SwitchCredentialsScreen extends StatefulWidget {
   final String database;
   final String protocol;
   final String urlInput;
+  final SessionModel session;
 
   const SwitchCredentialsScreen({
     super.key,
@@ -44,6 +46,7 @@ class SwitchCredentialsScreen extends StatefulWidget {
     required this.database,
     required this.protocol,
     required this.urlInput,
+    required this.session,
   });
 
   @override
@@ -58,6 +61,29 @@ class _SwitchCredentialsScreenState extends State<SwitchCredentialsScreen> {
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   String? _errorMessage;
+  String? _previousUrl;
+  String? _previousDatabase;
+  String? _previousSessionId;
+  bool _hadPreviousSession = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreviousSessionData();
+  }
+
+  Future<void> _loadPreviousSessionData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (widget.session != null &&
+        widget.session.sessionId != null &&
+        widget.session.sessionId!.isNotEmpty) {
+      _hadPreviousSession = true;
+      _previousUrl = prefs.getString('url');
+      _previousDatabase = prefs.getString('database');
+      _previousSessionId = widget.session.sessionId;
+    }
+  }
 
   /// Saves the server + credentials to history (most recent first, max 10 entries)
   Future<void> _saveUrlHistoryWithProtocol(
@@ -174,47 +200,65 @@ class _SwitchCredentialsScreenState extends State<SwitchCredentialsScreen> {
           listen: false,
         );
         if (!isInstalled) {
-          // Critical: clear all data and go back to login
-          final prefs = await SharedPreferences.getInstance();
-          List<String> urlHistory = prefs.getStringList('urlHistory') ?? [];
-          bool isGetStarted = prefs.getBool('hasSeenGetStarted') ?? false;
-
-          await prefs.clear();
-
-          await prefs.setStringList('urlHistory', urlHistory);
-          await prefs.setBool('hasSeenGetStarted', isGetStarted);
-          await StorageService().clearAccounts();
-          await CompanySessionManager.clearSessionCache();
-          await SecureStorageService().deleteAllPasswords();
-          await stopBackgroundService();
-
-          final productBox = Hive.isBoxOpen('products')
-              ? Hive.box<HiveProduct>('products')
-              : await Hive.openBox<HiveProduct>('products');
-          final bomBox = Hive.isBoxOpen('bom')
-              ? Hive.box<HiveBom>('bom')
-              : await Hive.openBox<HiveBom>('bom');
-          final userBox = Hive.isBoxOpen('users')
-              ? Hive.box<HiveUserModel>('users')
-              : await Hive.openBox<HiveUserModel>('users');
-          final workCenterBox = Hive.isBoxOpen('workCenters')
-              ? Hive.box<HiveWorkCenter>('workCenters')
-              : await Hive.openBox<HiveWorkCenter>('workCenters');
-
-          await productBox.clear();
-          await bomBox.clear();
-          await userBox.clear();
-          await workCenterBox.clear();
-
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/login',
-            (route) => false,
+          await prefs.remove('lastUsername');
+          await storageService.removeAccount(
+            userLogin: session?.userLogin ?? '',
+            userName: session?.userName ?? '',
+            userId: session?.userId ?? 0,
+            url: url,
+            database: widget.database,
           );
-          if (context.mounted) {
-            showModuleMissingDialog(context);
+
+          await SecureStorageService().deletePassword(
+            url: url,
+            database: widget.database,
+            username: session?.userLogin ?? '',
+          );
+          if (_hadPreviousSession &&
+              _previousUrl != null &&
+              _previousDatabase != null) {
+            await prefs.setString('url', _previousUrl!);
+            await prefs.setString('database', _previousDatabase!);
+            await prefs.setString('selectedDatabase', _previousDatabase!);
+            await prefs.setString('sessionId', _previousSessionId!);
+            await prefs.setString('userName', widget.session.userName!);
+            await prefs.setString('userLogin', widget.session.userLogin!);
+            await prefs.setInt('userId', widget.session.userId!);
+            await prefs.setString(
+                'serverVersion', widget.session.serverVersion!);
+            await prefs.setString('userLang', widget.session.userLang!);
+            await prefs.setInt('partnerId', widget.session.partnerId!);
+            await prefs.setString('userTimezone', widget.session.userTimezone!);
+            await prefs.setInt('companyId', widget.session.companyId!);
+            await prefs.setString('company_name', widget.session.companyName!);
+            await prefs.setBool('isSystem', widget.session.isSystem);
+            await prefs.setInt('version', widget.session.version!);
+            await prefs.setStringList(
+              'allowed_company_ids',
+              widget.session.allowedCompanyIds
+                  .map((e) => e.toString())
+                  .toList(),
+            );
+
+            await CompanySessionManager.clearSessionCache();
+            await CompanySessionManager.forceRefreshFromPrefs();
+            ConnectivityService.instance.setCurrentServerUrl(_previousUrl!);
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ServerUrlScreen(
+                    serverUrl: _previousUrl!,
+                    database: _previousDatabase!,
+                    session: widget.session
+                ),
+              ),
+            );
+            if (context.mounted) {
+              showModuleMissingDialog(context);
+            }
+            return;
           }
-          return;
         } else {
           // Success path: bootstrap and go to dashboard
           AppBootstrapper.reloadAppBlocs(context);
@@ -321,7 +365,7 @@ class _SwitchCredentialsScreenState extends State<SwitchCredentialsScreen> {
                 Navigator.of(context).pop();
               },
               child: Text(
-                'Back to Login',
+                'Back to Add Account',
                 style: GoogleFonts.manrope(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
