@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_snake_navigationbar/flutter_snake_navigationbar.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:hugeicons/hugeicons.dart';
 
 import 'package:provider/provider.dart';
@@ -19,6 +20,7 @@ import '../../core/company/infrastructure/company_refresh_bus.dart';
 import '../../core/company/providers/company_provider.dart';
 import '../../core/company/widgets/company_selector_widget.dart';
 import '../../core/providers/motion_provider.dart';
+import '../../globals.dart';
 import '../../service/background_service.dart';
 import '../../shared/widgets/snackbar.dart';
 import '../infrastructure/profile_refresh_bus.dart';
@@ -194,6 +196,12 @@ class _DashboardMoPageState extends State<DashboardMoPage> {
     ];
   }
 
+  /// Checks if a given byte array contains SVG content.
+  bool isSvgBytes(Uint8List bytes) {
+    final str = utf8.decode(bytes, allowMalformed: true);
+    return str.contains('<svg');
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -277,17 +285,31 @@ class _DashboardMoPageState extends State<DashboardMoPage> {
               child: Padding(
                 padding: const EdgeInsets.only(right: 16.0),
                 child: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: theme.colorScheme.surface,
-                  backgroundImage: profileImageBytes != null
-                      ? MemoryImage(profileImageBytes!)
-                      : null,
-                  child: profileImageBytes == null
-                      ? Icon(
-                          Icons.person,
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        )
-                      : null,
+                  radius: 20,
+                  backgroundColor: AppStyle.primaryColor,
+                  child: profileImageBytes != null
+                      ? isSvgBytes(profileImageBytes!)
+                      ? ClipOval(
+                    child: SvgPicture.memory(
+                      profileImageBytes!,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                      : ClipOval(
+                    child: Image.memory(
+                      profileImageBytes!,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        HugeIcons.strokeRoundedUser,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                      : Icon(HugeIcons.strokeRoundedUser, color: Colors.white),
                 ),
               ),
             ),
