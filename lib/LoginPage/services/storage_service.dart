@@ -66,10 +66,10 @@ class StorageService {
   Future<void> saveAccount(Map<String, dynamic> account) async {
     final prefs = await SharedPreferences.getInstance();
     final accounts = await getAccounts();
-    accounts.removeWhere((a) => a['userLogin'] == account['userLogin']);
-    if (!account.containsKey('image')) {
-      account['image'] = '';
-    }
+    accounts.removeWhere((a) =>
+    a['userLogin'] == account['userLogin'] &&
+        a['url'] == account['url'] &&
+        a['database'] == account['database']);
 
     accounts.add(account);
 
@@ -92,5 +92,25 @@ class StorageService {
   Future<void> clearAccounts() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accountsKey);
+  }
+
+  Future<void> removeAccount({
+    required String userLogin,
+    required String userName,
+    required int userId,
+    required String url,
+    required String database,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final accounts = await getAccounts();
+
+    accounts.removeWhere((a) =>
+    a['userLogin'] == userLogin &&
+        a['userName'] == userName &&
+        a['userId'] == userId &&
+        a['url'] == url &&
+        a['database'] == database);
+
+    await prefs.setString(_accountsKey, jsonEncode(accounts));
   }
 }

@@ -9,7 +9,9 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:mobo_manufacturing_app/Dashboard/pages/SwitchAccount/switch_credentials_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../LoginPage/models/session_model.dart';
 import '../../../LoginPage/services/network_service.dart';
+import '../dashboard_mo.dart';
 
 /// Screen for entering and validating the Odoo server URL and database selection.
 ///
@@ -30,11 +32,13 @@ import '../../../LoginPage/services/network_service.dart';
 class ServerUrlScreen extends StatefulWidget {
   final String serverUrl;
   final String database;
+  final SessionModel session;
 
   const ServerUrlScreen({
     super.key,
     required this.serverUrl,
     required this.database,
+    required this.session,
   });
 
   @override
@@ -365,234 +369,277 @@ class _ServerUrlScreenState extends State<ServerUrlScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Background gradient + subtle texture
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark ? Colors.grey[950] : Colors.grey[50],
-                image: DecorationImage(
-                  image: const AssetImage("assets/background.png"),
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    isDark
-                        ? Colors.black.withOpacity(1)
-                        : Colors.white.withOpacity(1),
-                    BlendMode.dstATop,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Header logo + app name
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 40),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    'assets/manufacturing-icon.png',
-                    fit: BoxFit.fitWidth,
-                    height: 30,
-                    width: 30,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.precision_manufacturing,
-                        color: Color(0xFFC03355),
-                        size: 20,
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'mobo manufacturing',
-                    style: TextStyle(
-                      fontFamily: 'Yaro',
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white,
-                      fontSize: 24,
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardMoPage()),
+        );
+        return false;
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // Background gradient + subtle texture
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey[950] : Colors.grey[50],
+                  image: DecorationImage(
+                    image: const AssetImage("assets/background.png"),
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      isDark
+                          ? Colors.black.withOpacity(1)
+                          : Colors.white.withOpacity(1),
+                      BlendMode.dstATop,
                     ),
                   ),
-                ],
+                ),
               ),
             ),
-          ),
 
-          // Main content
-          Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 20),
-                      const SizedBox(height: 45),
-                      Align(
-                        alignment: Alignment.center,
-                        child: Text(
-                          "Add Account",
-                          style: GoogleFonts.montserrat(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            fontSize: 25,
-                          ),
+            Positioned(
+              top: 0,
+              left: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _isLoading
+                        ? null
+                        : () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DashboardMoPage(),
                         ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(32),
+                    child: Container(
+                      height: 64,
+                      width: 64,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        HugeIcons.strokeRoundedArrowLeft01,
+                        color: _isLoading ? Colors.white54 : Colors.white,
+                        size: 24,
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Enter your server details to continue',
-                        style: GoogleFonts.manrope(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-
-                      // URL + protocol input with autocomplete
-                      _UrlInputField(
-                        controller: _urlController,
-                        protocol: selectedProtocol,
-                        url: _url,
-                        isLoading: _isLoading,
-                        urlSuggestions: _urlSuggestions,
-                        urlHistory: urlHistory,
-                        hideHistorySuggestions: hideHistorySuggestions,
-                        onUrlChanged: _handleUrlChanged,
-                        onProtocolChanged: (value) {
-                          if (value == null) return;
-                          setState(() => selectedProtocol = value);
-                          if (_url.isNotEmpty) _handleUrlChanged(_url);
-                        },
-                        onDatabaseSelected: (db) {
-                          setState(() => _selectedDatabase = db);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Manual DB input or dropdown
-                      if (_showManualDbInput) _buildManualDbInput(),
-                      if (!_showManualDbInput && _databases.isNotEmpty)
-                        _DatabaseDropdown(
-                          databases: _databases,
-                          selectedDatabase: _selectedDatabase,
-                          onDatabaseChanged: (db) =>
-                              setState(() => _selectedDatabase = db),
-                        ),
-
-                      // Error message
-                      if (showError) ...[
-                        if (_errorMessage != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Text(
-                              _errorMessage!,
-                              style: GoogleFonts.manrope(color: Colors.white),
-                            ),
-                          ),
-                      ],
-                      const SizedBox(height: 30),
-
-                      // Next button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: ((_databases.isEmpty && !_showManualDbInput) ||
-                              (_showManualDbInput && _manualDbController.text.isEmpty) ||
-                              (!_showManualDbInput && _selectedDatabase == null))
-                              ? null
-                              : () {
-                                  setState(() {
-                                    showError = true;
-                                  });
-                                  var url = _url.trim();
-                                  url = url.replaceFirst(
-                                    RegExp(r'^https?://'),
-                                    '',
-                                  );
-                                  String finalDb = _showManualDbInput
-                                      ? _manualDbController.text.trim()
-                                      : _selectedDatabase!;
-                                  if (finalDb.isEmpty) {
-                                    setState(
-                                          () => _errorMessage =
-                                      "Database name is required",
-                                    );
-                                    return;
-                                  }
-                                  if (urlHistory.containsKey(url)) {
-                                    final entry = urlHistory[url]!;
-
-                                    if (!_showManualDbInput && (_selectedDatabase == null ||
-                                        _selectedDatabase!.isEmpty)) {
-                                      finalDb = entry['db'] ?? "";
-                                    }
-                                  }
-
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => SwitchCredentialsScreen(
-                                        serverUrl: url,
-                                        database: finalDb,
-                                        protocol:
-                                            _workingProtocol ??
-                                            selectedProtocol,
-                                        urlInput: _url,
-                                      ),
-                                    ),
-                                  );
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: _isLoading
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Checking',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    LoadingAnimationWidget.staggeredDotsWave(
-                                      color: Colors.white,
-                                      size: 28,
-                                    ),
-                                  ],
-                                )
-                              : const Text(
-                                  'Next',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+            // Header logo + app name
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 40),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/manufacturing-icon.png',
+                      fit: BoxFit.fitWidth,
+                      height: 30,
+                      width: 30,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.precision_manufacturing,
+                          color: Color(0xFFC03355),
+                          size: 20,
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'mobo manufacturing',
+                      style: TextStyle(
+                        fontFamily: 'Yaro',
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white,
+                        fontSize: 24,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Main content
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 20),
+                        const SizedBox(height: 45),
+                        Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            "Add Account",
+                            style: GoogleFonts.montserrat(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              fontSize: 25,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Enter your server details to continue',
+                          style: GoogleFonts.manrope(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+
+                        // URL + protocol input with autocomplete
+                        _UrlInputField(
+                          controller: _urlController,
+                          protocol: selectedProtocol,
+                          url: _url,
+                          isLoading: _isLoading,
+                          urlSuggestions: _urlSuggestions,
+                          urlHistory: urlHistory,
+                          hideHistorySuggestions: hideHistorySuggestions,
+                          onUrlChanged: _handleUrlChanged,
+                          onProtocolChanged: (value) {
+                            if (value == null) return;
+                            setState(() => selectedProtocol = value);
+                            if (_url.isNotEmpty) _handleUrlChanged(_url);
+                          },
+                          onDatabaseSelected: (db) {
+                            setState(() => _selectedDatabase = db);
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Manual DB input or dropdown
+                        if (_showManualDbInput) _buildManualDbInput(),
+                        if (!_showManualDbInput && _databases.isNotEmpty)
+                          _DatabaseDropdown(
+                            databases: _databases,
+                            selectedDatabase: _selectedDatabase,
+                            onDatabaseChanged: (db) =>
+                                setState(() => _selectedDatabase = db),
+                          ),
+
+                        // Error message
+                        if (showError) ...[
+                          if (_errorMessage != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Text(
+                                _errorMessage!,
+                                style: GoogleFonts.manrope(color: Colors.white),
+                              ),
+                            ),
+                        ],
+                        const SizedBox(height: 30),
+
+                        // Next button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: ((_databases.isEmpty && !_showManualDbInput) ||
+                                (_showManualDbInput && _manualDbController.text.isEmpty) ||
+                                (!_showManualDbInput && _selectedDatabase == null))
+                                ? null
+                                : () {
+                                    setState(() {
+                                      showError = true;
+                                    });
+                                    var url = _url.trim();
+                                    url = url.replaceFirst(
+                                      RegExp(r'^https?://'),
+                                      '',
+                                    );
+                                    String finalDb = _showManualDbInput
+                                        ? _manualDbController.text.trim()
+                                        : _selectedDatabase!;
+                                    if (finalDb.isEmpty) {
+                                      setState(
+                                            () => _errorMessage =
+                                        "Database name is required",
+                                      );
+                                      return;
+                                    }
+                                    if (urlHistory.containsKey(url)) {
+                                      final entry = urlHistory[url]!;
+
+                                      if (!_showManualDbInput && (_selectedDatabase == null ||
+                                          _selectedDatabase!.isEmpty)) {
+                                        finalDb = entry['db'] ?? "";
+                                      }
+                                    }
+
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => SwitchCredentialsScreen(
+                                          serverUrl: url,
+                                          database: finalDb,
+                                          protocol:
+                                              _workingProtocol ??
+                                              selectedProtocol,
+                                          urlInput: _url,
+                                          session: widget.session,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: _isLoading
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Checking',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      LoadingAnimationWidget.staggeredDotsWave(
+                                        color: Colors.white,
+                                        size: 28,
+                                      ),
+                                    ],
+                                  )
+                                : const Text(
+                                    'Next',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
